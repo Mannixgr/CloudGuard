@@ -1,6 +1,6 @@
 # CloudGuard
 
-An AWS operations platform I'm building in phases to flag cost waste and security misconfigurations, then help investigate incidents.
+An agentic AWS operations assistant I'm building in phases: read-only scans, then detection rules for cost waste and security misconfigurations, then an AI agent that investigates findings and proposes fixes for human approval.
 
 **Status: early development.** This repo is the start of the project. Items under [Roadmap](#roadmap) are planned unless marked done.
 
@@ -13,7 +13,7 @@ I want hands-on experience with what cloud operations teams actually do: finding
 - **Read-only first.** Every early phase runs under a least-privilege, read-only IAM profile. CloudGuard observes and reports before it is ever allowed to change anything.
 - **Test against known-bad infrastructure.** Detection rules are checked against resources I deliberately misconfigure myself, so I know a rule fires for the right reason.
 - **Infrastructure as code.** AWS resources are defined in Terraform, not clicked together in the console.
-- **Human in the loop.** Any future action that changes infrastructure goes through explicit approval.
+- **Human in the loop.** The agent can read and propose, never apply. Any change to infrastructure goes through explicit approval.
 
 ## Roadmap
 
@@ -24,11 +24,11 @@ I want hands-on experience with what cloud operations teams actually do: finding
 | 1 | Detection rules for cost waste and security misconfigurations | Planned |
 | 2 | API layer (FastAPI + Postgres) and findings history | Planned |
 | 3 | Incident investigation: correlate CloudTrail and CloudWatch data around a finding | Planned |
-| v2 | Agentic investigator that proposes fixes for human approval | Planned |
+| v2 | Agentic investigator: an LLM agent calls read-only AWS tools (CloudTrail, CloudWatch, the Phase 1 scans), explains the likely cause and proposes a fix as a Terraform change for human approval | Planned |
 
 ## Tech stack
 
-Python · boto3 · FastAPI · PostgreSQL · Terraform · AWS (IAM, EC2, CloudTrail, CloudWatch)
+Python · boto3 · LLM agents (tool calling) · FastAPI · PostgreSQL · Terraform · AWS (IAM, EC2, CloudTrail, CloudWatch)
 
 ## Getting started
 
