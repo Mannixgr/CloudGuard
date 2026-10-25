@@ -39,14 +39,14 @@ git clone https://github.com/Mannixgr/CloudGuard.git
 cd CloudGuard
 python3 -m venv .venv
 source .venv/bin/activate
-pip install boto3
+pip install -r requirements.txt
 ```
 
 Point boto3 at your read-only profile and region (replace the profile name with yours):
 
 ```bash
 export AWS_PROFILE=<your-readonly-profile>
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION=ca-central-1
 ```
 
 Scripts will be added under this repo as each phase lands. Each one documents the IAM permissions it needs.

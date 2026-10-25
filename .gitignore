@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local secrets and config
+.env
+.env.*
+
+# Scan output can contain account IDs and resource ARNs
+output/
+*.log
+
+# OS
+.DS_Store
