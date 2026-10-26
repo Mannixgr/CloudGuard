@@ -15,6 +15,35 @@ I want hands-on experience with what cloud operations teams actually do: finding
 - **Infrastructure as code.** AWS resources are defined in Terraform, not clicked together in the console.
 - **Human in the loop.** The agent can read and propose, never apply. Any change to infrastructure goes through explicit approval.
 
+## How it works
+
+Solid lines are the current phase (0.5). Dashed lines are planned.
+
+```mermaid
+flowchart LR
+  subgraph local["Your machine"]
+    scan["CloudGuard scripts<br/>Python + boto3"]
+  end
+  subgraph real["Real account: enterprise-hybrid-aws, ca-central-1"]
+    role["cloudguard-readonly role<br/>read-only"]
+    res["NAT, VPN, VGW, EC2, EIPs"]
+  end
+  subgraph sandbox["Sandbox account: standalone, no Organization"]
+    bad["Seeded misconfigured resources<br/>Terraform, destroyed after each test"]
+  end
+
+  scan -->|"assume role"| role
+  role -->|"describe calls only"| res
+  scan --> findings["Findings<br/>missing tags, past ExpiresOn"]
+  scan -.->|"Phase 0-1: prove rules fire"| bad
+  findings -.-> api["Phase 2: FastAPI + Postgres"]
+  api -.-> agent["v2: agent proposes a Terraform fix"]
+  agent -.->|"human approval"| pr["Pull request"]
+
+  classDef planned stroke-dasharray: 5 5
+  class bad,api,agent,pr planned
+```
+
 ## Roadmap
 
 | Phase | Goal | Status |
