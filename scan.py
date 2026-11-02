@@ -48,7 +48,7 @@ def resources(ec2):
                     yield "ec2-instance", i["InstanceId"], i.get("Tags")
     for page in ec2.get_paginator("describe_nat_gateways").paginate():
         for n in page["NatGateways"]:
-            if n["State"] not in ("deleted", "deleting"):
+            if n["State"] not in ("deleted", "deleting", "failed"):  # failed NATs aren't billed
                 yield "nat-gateway", n["NatGatewayId"], n.get("Tags")
     # These two have no paginator: AWS returns every item in one response.
     for v in ec2.describe_vpn_connections()["VpnConnections"]:

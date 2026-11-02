@@ -2,7 +2,10 @@
 import unittest
 from datetime import date
 
-from scan import tag_findings
+import boto3
+from botocore.stub import Stubber
+
+from scan import resources, tag_findings
 
 TODAY = date(2026, 11, 2)
 VALID = {"Project": "enterprise-hybrid-aws", "Environment": "dev", "Owner": "Mannix",
@@ -45,6 +48,53 @@ class TagFindings(unittest.TestCase):
         self.assertEqual(tag_findings(tags, TODAY), ["waste-lab needs ExpiresOn"])
         dated = tags + [{"Key": "ExpiresOn", "Value": "2026-12-01"}]
         self.assertEqual(tag_findings(dated, TODAY), [])
+
+
+class Resources(unittest.TestCase):
+    """Stubber answers the Describe calls in order, so nothing reaches AWS."""
+
+    def run_scan(self, instances=({"Reservations": []},), nats=(), vpns=(), eips=()):
+        # Fake credentials: if a call ever escaped the stub, AWS would reject it.
+        ec2 = boto3.client("ec2", region_name="ca-central-1",
+                           aws_access_key_id="x", aws_secret_access_key="x")
+        stub = Stubber(ec2)
+        for page in instances:
+            stub.add_response("describe_instances", page)
+        stub.add_response("describe_nat_gateways", {"NatGateways": list(nats)})
+        stub.add_response("describe_vpn_connections", {"VpnConnections": list(vpns)})
+        stub.add_response("describe_addresses", {"Addresses": list(eips)})
+        with stub:
+            found = list(resources(ec2))
+        stub.assert_no_pending_responses()
+        return found
+
+    @staticmethod
+    def instance(iid, state="running"):
+        return {"Instances": [{"InstanceId": iid, "State": {"Name": state}}]}
+
+    def test_instances_follow_next_token(self):
+        pages = ({"Reservations": [self.instance("i-1")], "NextToken": "t"},
+                 {"Reservations": [self.instance("i-2")]})
+        self.assertEqual([r[1] for r in self.run_scan(instances=pages)], ["i-1", "i-2"])
+
+    def test_terminated_instance_is_skipped(self):
+        pages = ({"Reservations": [self.instance("i-1", "terminated")]},)
+        self.assertEqual(self.run_scan(instances=pages), [])
+
+    def test_failed_nat_is_skipped(self):
+        nats = [{"NatGatewayId": f"nat-{n}", "State": s}
+                for n, s in ((1, "available"), (2, "failed"), (3, "deleted"))]
+        self.assertEqual([r[1] for r in self.run_scan(nats=nats)], ["nat-1"])
+
+    def test_deleted_vpn_is_skipped(self):
+        vpns = [{"VpnConnectionId": f"vpn-{n}", "State": s, "Type": "ipsec.1", "CustomerGatewayId": "cgw-1"}
+                for n, s in ((1, "available"), (2, "deleted"))]
+        self.assertEqual([r[1] for r in self.run_scan(vpns=vpns)], ["vpn-1"])
+
+    def test_eip_tags_pass_through(self):
+        tags = [{"Key": "Owner", "Value": "Mannix"}]
+        eips = [{"AllocationId": "eipalloc-1", "Tags": tags}]
+        self.assertEqual(self.run_scan(eips=eips), [("elastic-ip", "eipalloc-1", tags)])
 
 
 if __name__ == "__main__":
