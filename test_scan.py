@@ -5,7 +5,13 @@ from datetime import date
 from scan import tag_findings
 
 TODAY = date(2026, 11, 2)
-FULL = [{"Key": k, "Value": "x"} for k in ("Project", "Environment", "Owner", "ManagedBy", "Purpose")]
+VALID = {"Project": "enterprise-hybrid-aws", "Environment": "dev", "Owner": "Mannix",
+         "ManagedBy": "terraform", "Purpose": "network"}
+FULL = [{"Key": k, "Value": v} for k, v in VALID.items()]
+
+
+def with_tag(key, value):
+    return [t if t["Key"] != key else {"Key": key, "Value": value} for t in FULL]
 
 
 class TagFindings(unittest.TestCase):
@@ -26,6 +32,19 @@ class TagFindings(unittest.TestCase):
     def test_bad_date(self):
         tags = FULL + [{"Key": "ExpiresOn", "Value": "31/10/2026"}]
         self.assertIn("not YYYY-MM-DD", tag_findings(tags, TODAY)[0])
+
+    def test_wrong_case_value(self):
+        self.assertEqual(tag_findings(with_tag("Environment", "Dev"), TODAY),
+                         ["Environment='Dev' not allowed"])
+
+    def test_empty_value_is_not_allowed(self):
+        self.assertEqual(tag_findings(with_tag("Purpose", ""), TODAY), ["Purpose='' not allowed"])
+
+    def test_waste_lab_needs_expiry(self):
+        tags = with_tag("Purpose", "waste-lab")
+        self.assertEqual(tag_findings(tags, TODAY), ["waste-lab needs ExpiresOn"])
+        dated = tags + [{"Key": "ExpiresOn", "Value": "2026-12-01"}]
+        self.assertEqual(tag_findings(dated, TODAY), [])
 
 
 if __name__ == "__main__":

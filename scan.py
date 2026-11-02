@@ -9,14 +9,26 @@ from datetime import date
 import boto3
 
 PROFILE = "cloudguard-readonly"  # never the admin [default] profile
-REQUIRED_TAGS = ("Project", "Environment", "Owner", "ManagedBy", "Purpose")
+# copied from enterprise-hybrid-aws-/docs/tagging.md; change that doc first
+ALLOWED_VALUES = {
+    "Project": ("enterprise-hybrid-aws",),
+    "Environment": ("dev", "bootstrap", "prod"),
+    "Owner": ("Mannix",),
+    "ManagedBy": ("terraform", "manual"),
+    "Purpose": ("network", "cicd", "waste-lab"),
+}
+REQUIRED_TAGS = tuple(ALLOWED_VALUES)
 
 
 def tag_findings(tags, today):
     """Return a list of problems for one resource's tag list ([{"Key":..., "Value":...}])."""
     tags = {t["Key"]: t["Value"] for t in tags or []}
     problems = [f"missing tag {k}" for k in REQUIRED_TAGS if k not in tags]
+    problems += [f"{k}='{tags[k]}' not allowed" for k, allowed in ALLOWED_VALUES.items()
+                 if k in tags and tags[k] not in allowed]
     expires = tags.get("ExpiresOn")
+    if tags.get("Purpose") == "waste-lab" and not expires:
+        problems.append("waste-lab needs ExpiresOn")
     if expires:
         try:
             if date.fromisoformat(expires) < today:
