@@ -28,7 +28,7 @@ Solid boxes exist today, amber dashed is in progress (Phase 0.5) and green dashe
 | Phase | Goal | Status |
 | --- | --- | --- |
 | 0 | Seed deliberately misconfigured AWS resources (Terraform) to test detections against | Planned |
-| 0.5 | boto3 on-ramp: read-only scripts, starting with `describe_instances()`, under the `cloudguard-readonly` role | In progress (role built; scripts next) |
+| 0.5 | boto3 on-ramp: read-only scripts, starting with `describe_instances()`, under the `cloudguard-readonly` role | In progress (role built; first tag scanner `scan.py` built) |
 | 1 | Detection rules for cost waste and security misconfigurations | Planned |
 | 2 | API layer (FastAPI + Postgres) and findings history | Planned |
 | 3 | Incident investigation: correlate CloudTrail and CloudWatch data around a finding | Planned |
