@@ -40,7 +40,7 @@ Python · boto3 · LLM agents (tool calling) · FastAPI · PostgreSQL · Terrafo
 
 ## Getting started
 
-You need Python 3.10+ and an AWS account with a **read-only** profile configured.
+You need Python 3.10+ and an AWS account with a **read-only** role to assume.
 
 ```bash
 git clone https://github.com/Mannixgr/CloudGuard.git
@@ -50,14 +50,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Point boto3 at your read-only profile and region (replace the profile name with yours):
+`scan.py` always uses the AWS profile `cloudguard-readonly` (it ignores `AWS_PROFILE`, so it can never fall back to an admin profile). Define that profile in `~/.aws/config` to assume the read-only role with MFA, with `region = ca-central-1`.
 
 ```bash
-export AWS_PROFILE=<your-readonly-profile>
-export AWS_DEFAULT_REGION=ca-central-1
+python -m unittest test_scan.py   # 13 tests, stubbed, no AWS calls
+python scan.py                    # asks for the MFA code, prints tag findings
 ```
 
-Scripts will be added under this repo as each phase lands. Each one documents the IAM permissions it needs.
+`scan.py` lists EC2 instances, NAT gateways, VPN connections and Elastic IPs, and flags missing standard tags, values outside the [tagging standard](https://github.com/Mannixgr/enterprise-hybrid-aws/blob/main/docs/tagging.md), `waste-lab` resources without `ExpiresOn`, and expired `ExpiresOn` dates. It only makes `Describe*` calls. Later scripts will each document the IAM permissions they need.
 
 ## Security notes
 
